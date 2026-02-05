@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
