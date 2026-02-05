@@ -32,7 +32,7 @@ function App() {
                     onChange={(e) => setPassword(e.target.value)}
                 />
                 <button className="py-3 px-5 rounded-md text-white bg-emerald-500 w-fit mx-auto cursor-pointer" onClick={login}>
-                    Sign in
+                    Sign in.
                 </button>
             </div>
         </div>
