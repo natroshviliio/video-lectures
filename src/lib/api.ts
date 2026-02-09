@@ -15,7 +15,9 @@ api_v2.interceptors.request.use(
         if (token) config.headers.set("Authorization", `Bearer ${token}`);
         return config;
     },
-    (error) => Promise.reject(error),
+    (error) => {
+        return Promise.reject(error);
+    },
 );
 
 api_v2.interceptors.response.use(
@@ -23,26 +25,22 @@ api_v2.interceptors.response.use(
         return response;
     },
     async (error) => {
-        return new Promise((resolve) => {
-            const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-            if (error.response?.status === 401 && !originalRequest._retry && !["/rt", "/login"].includes(originalRequest.url!)) {
-                originalRequest._retry = true;
-                const response = api_v2
-                    .post("/rt", {})
-                    .then((res) => res.data)
-                    .then((res) => {
-                        localStorage.setItem("_at", res.accessToken);
-                        originalRequest.headers.set("Authorization", `Bearer ${res.accessToken}`);
-                        return api_v2(originalRequest);
-                    })
-                    .catch((err) => {
-                        localStorage.removeItem("_at");
-                        return Promise.reject(err);
-                    });
+        if (error.response?.status === 401 && !originalRequest._retry && !["/rt", "/login"].includes(originalRequest.url!)) {
+            originalRequest._retry = true;
 
-                resolve(response);
+            try {
+                const { data } = await api_v2.post("/rt");
+                localStorage.setItem("_at", data.accessToken);
+                originalRequest.headers.set("Authorization", `Bearer ${data.accessToken}`);
+
+                return api_v2(originalRequest);
+            } catch (err) {
+                localStorage.removeItem("_at");
+                return Promise.reject(err);
             }
-        });
+        }
+        return Promise.reject(error);
     },
 );

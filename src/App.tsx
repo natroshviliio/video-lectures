@@ -16,13 +16,30 @@ function App() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [user, setUser] = useState<User | null>(null);
+    const [isLoginPending, setLoginPending] = useState(false);
+    const [userLoaded, setUserLoaded] = useState<"loading" | "loaded" | "error">("loading");
 
-    const login = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    const login = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const response = await api_v1.post("/login", { username, password });
-        const data = await response.data;
-        setUser(data.user);
-        localStorage.setItem("_at", data.accessToken);
+        setLoginPending(true);
+        try {
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(true);
+                }, 3000);
+            });
+
+            const response = await api_v1.post("/login", { username, password }, { withCredentials: true });
+            const data = await response.data;
+            setUser(data.user);
+            localStorage.setItem("_at", data.accessToken);
+            setUserLoaded("loaded");
+        } catch (err) {
+            console.error("Login failed:", err);
+            setUserLoaded("error");
+        } finally {
+            setLoginPending(false);
+        }
     };
 
     const logout = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -30,16 +47,32 @@ function App() {
         const response = await api_v2.post("/logout");
         if (response.status >= 200 && response.status < 300) {
             setUser(null);
+            setUserLoaded("error");
             localStorage.removeItem("_at");
         }
     };
 
     useEffect(() => {
         const checkSession = async () => {
-            const response = await api_v2.get("/me");
-            const data = await response.data;
+            setUserLoaded("loading");
+            try {
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve(true);
+                    }, 2000);
+                });
 
-            setUser(data.user ?? null);
+                const response = await api_v2.get("/me");
+                const data = await response.data;
+                console.log(data, 123);
+
+                setUser(data.user ?? null);
+                setUserLoaded("loaded");
+            } catch (err) {
+                console.error("Session check failed:", err);
+                setUser(null);
+                setUserLoaded("error");
+            }
         };
 
         checkSession();
@@ -48,7 +81,15 @@ function App() {
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-                {!user ? (
+                {userLoaded === "loading" && (
+                    <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200 text-center">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                            <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                            <p className="text-slate-600 font-medium">Loading user data...</p>
+                        </div>
+                    </div>
+                )}
+                {userLoaded === "error" && !user && (
                     <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200">
                         <div className="text-center mb-8">
                             <h1 className="text-4xl font-bold text-slate-900">Sign In</h1>
@@ -64,6 +105,7 @@ function App() {
                                     onChange={(e) => setUsername(e.target.value)}
                                     placeholder="your.username"
                                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                                    disabled={isLoginPending}
                                 />
                             </div>
 
@@ -75,17 +117,27 @@ function App() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                                    disabled={isLoginPending}
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 mt-6">
-                                Sign In
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 mt-6"
+                                disabled={isLoginPending}>
+                                {isLoginPending ? (
+                                    <div className="flex items-center justify-center gap-x-3">
+                                        <span>Loading...</span>
+                                        <div className="w-6 h-6 animate-spin border-t-blue-200 border-4 rounded-full mr-2"></div>
+                                    </div>
+                                ) : (
+                                    "Sign In"
+                                )}
                             </button>
                         </form>
                     </div>
-                ) : (
+                )}
+                {userLoaded === "loaded" && user && (
                     <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200">
                         <div className="text-center mb-6">
                             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
