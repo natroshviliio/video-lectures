@@ -1,5 +1,5 @@
-import axios, { type InternalAxiosRequestConfig } from "axios";
 import { useEffect, useState } from "react";
+import { api_v2 } from "./lib/api";
 
 interface User {
     user_id: number;
@@ -12,65 +12,22 @@ interface User {
     is_active: boolean;
 }
 
-const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-    withCredentials: true,
-});
-
-api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem("_at");
-        if (token) config.headers.set("Authorization", `Bearer ${token}`);
-        return config;
-    },
-    (error) => Promise.reject(error),
-);
-
-api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        return new Promise((resolve) => {
-            const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
-            if (error.response?.status === 401 && !originalRequest._retry && !["/refresh-token", "/login"].includes(originalRequest.url!)) {
-                originalRequest._retry = true;
-                const response = api
-                    .post("/refresh-token", {})
-                    .then((res) => res.data)
-                    .then((res) => {
-                        localStorage.setItem("_at", res.accessToken);
-                        originalRequest.headers.set("Authorization", `Bearer ${res.accessToken}`);
-                        return api(originalRequest);
-                    })
-                    .catch((err) => {
-                        localStorage.removeItem("_at");
-                        return Promise.reject(err);
-                    });
-
-                resolve(response);
-            }
-
-            // return Promise.reject(error);
-        });
-    },
-);
-
 function App() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [user, setUser] = useState<User | null>(null);
 
-    const login = async () => {
-        const response = await api.post("/login", { username, password });
+    const login = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const response = await api_v2.post("/login", { username, password });
         const data = await response.data;
         setUser(data.user);
         localStorage.setItem("_at", data.accessToken);
     };
 
-    const logout = async () => {
-        const response = await api.post("/logout");
+    const logout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        const response = await api_v2.post("/logout");
         if (response.status >= 200 && response.status < 300) {
             setUser(null);
             localStorage.removeItem("_at");
@@ -79,7 +36,7 @@ function App() {
 
     useEffect(() => {
         const checkSession = async () => {
-            const response = await api.get("/me");
+            const response = await api_v2.get("/me");
             const data = await response.data;
 
             setUser(data.user ?? null);
@@ -89,37 +46,90 @@ function App() {
     }, []);
 
     return (
-        <div className="flex flex-col gap-y-5 items-center">
-            <div className="rounded-lg border border-neutral-100 shadow-md p-3 xl:w-1/5 w-[90%] mt-5 flex flex-col gap-y-3">
-                <h1 className="font-bold text-2xl text-center">Sign in</h1>
-                <input
-                    type="text"
-                    className="w-2/3 py-2 px-3 text-lg outline-none border border-neutral-300 rounded-md mx-auto"
-                    placeholder="username"
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-                <input
-                    type="password"
-                    className="w-2/3 py-2 px-3 text-lg outline-none border border-neutral-300 rounded-md mx-auto"
-                    placeholder="password"
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <button className="py-3 px-5 rounded-md text-white bg-emerald-500 w-fit mx-auto cursor-pointer" onClick={login}>
-                    Sign in
-                </button>
-                <button className="py-3 px-5 rounded-md text-white bg-red-500 w-fit mx-auto cursor-pointer" onClick={logout}>
-                    Sign out
-                </button>
-            </div>
-            {user && (
-                <div className="rounded-lg border border-neutral-100 shadow-md p-3 xl:w-1/5 w-[90%] mt-5 flex flex-col gap-y-3">
-                    <h1 className="font-bold text-2xl text-center">User</h1>
-                    <div>
-                        full name: {user?.firstname} {user?.lastname}
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                {!user ? (
+                    <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200">
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-slate-900">Sign In</h1>
+                            <p className="text-slate-500 mt-2 text-sm">Access your account securely</p>
+                        </div>
+
+                        <form onSubmit={login} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Username</label>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="your.username"
+                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 mt-6">
+                                Sign In
+                            </button>
+                        </form>
                     </div>
-                    <div>email: {user?.email}</div>
-                </div>
-            )}
+                ) : (
+                    <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl font-bold text-blue-600">{user.firstname.charAt(0)}</span>
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 mb-1">
+                                {user.firstname} {user.lastname}
+                            </h2>
+                            <p className="text-slate-500 text-sm">{user.email}</p>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3 text-left">
+                            <div>
+                                <p className="text-xs font-semibold text-slate-600 uppercase">User ID</p>
+                                <p className="text-slate-900">{user.user_id}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-600 uppercase">Username</p>
+                                <p className="text-slate-900">{user.username}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-600 uppercase">Birth Date</p>
+                                <p className="text-slate-900">{new Date(user.birthdate).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-600 uppercase">Role</p>
+                                <p className="text-slate-900 capitalize">{user.user_role}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-600 uppercase">Status</p>
+                                <p className={user.is_active ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                                    {user.is_active ? "Active" : "Inactive"}
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={logout}
+                            className="w-full bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition duration-200">
+                            Sign Out
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
