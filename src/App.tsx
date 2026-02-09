@@ -116,9 +116,7 @@ function App() {
                             </div>
                             <div>
                                 <p className="text-xs font-semibold text-slate-600 uppercase">Status</p>
-                                <p className={user.is_active ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                                    {user.is_active ? "Active" : "Inactive"}
-                                </p>
+                                <p className={user.is_active ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{user.is_active}</p>
                             </div>
                         </div>
 
