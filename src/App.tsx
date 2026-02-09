@@ -26,7 +26,7 @@ function App() {
             await new Promise((resolve) => {
                 setTimeout(() => {
                     resolve(true);
-                }, 3000);
+                }, 2000);
             });
 
             const response = await api_v1.post("/login", { username, password }, { withCredentials: true });
@@ -64,12 +64,10 @@ function App() {
 
                 const response = await api_v2.get("/me");
                 const data = await response.data;
-                console.log(data, 123);
 
                 setUser(data.user ?? null);
                 setUserLoaded("loaded");
-            } catch (err) {
-                console.error("Session check failed:", err);
+            } catch {
                 setUser(null);
                 setUserLoaded("error");
             }
@@ -168,7 +166,9 @@ function App() {
                             </div>
                             <div>
                                 <p className="text-xs font-semibold text-slate-600 uppercase">Status</p>
-                                <p className={user.is_active ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>{user.is_active}</p>
+                                <p className={!!user.is_active === true ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                                    {!!user.is_active === true ? "Active" : "Inactive"}
+                                </p>
                             </div>
                         </div>
 
