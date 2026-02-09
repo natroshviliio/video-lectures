@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api_v2 } from "./lib/api";
+import { api_v1, api_v2 } from "./lib/api";
 
 interface User {
     user_id: number;
@@ -19,7 +19,7 @@ function App() {
 
     const login = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const response = await api_v2.post("/login", { username, password });
+        const response = await api_v1.post("/login", { username, password });
         const data = await response.data;
         setUser(data.user);
         localStorage.setItem("_at", data.accessToken);
