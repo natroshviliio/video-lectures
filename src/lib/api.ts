@@ -5,6 +5,10 @@ export const api_v2 = axios.create({
     withCredentials: true,
 });
 
+export const api_v1 = axios.create({
+    baseURL: import.meta.env.VITE_API_V1_URL,
+});
+
 api_v2.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem("_at");
