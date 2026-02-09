@@ -1,7 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
 export const api_v2 = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: import.meta.env.VITE_API_V2_URL,
     withCredentials: true,
 });
 
@@ -22,10 +22,10 @@ api_v2.interceptors.response.use(
         return new Promise((resolve) => {
             const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-            if (error.response?.status === 401 && !originalRequest._retry && !["/refresh-token", "/login"].includes(originalRequest.url!)) {
+            if (error.response?.status === 401 && !originalRequest._retry && !["/rt", "/login"].includes(originalRequest.url!)) {
                 originalRequest._retry = true;
                 const response = api_v2
-                    .post("/refresh-token", {})
+                    .post("/rt", {})
                     .then((res) => res.data)
                     .then((res) => {
                         localStorage.setItem("_at", res.accessToken);
