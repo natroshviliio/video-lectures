@@ -20,6 +20,7 @@ const handleAccessToken = async () => {
 api_v2.interceptors.request.use(
     async (config) => {
         config.headers.set("Authorization", `Bearer ${at}`);
+        config.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
         return config;
     },
     (error) => {
