@@ -26,10 +26,8 @@ function App() {
             const response = await api_v1.post("/login", { username, password });
             const data = await response.data;
             setUser(data.user);
-            localStorage.setItem("_at", data.accessToken);
             setUserLoaded("loaded");
-        } catch (err) {
-            console.error("Login failed:", err);
+        } catch {
             setUserLoaded("error");
         } finally {
             setLoginPending(false);
@@ -42,7 +40,6 @@ function App() {
         if (response.status >= 200 && response.status < 300) {
             setUser(null);
             setUserLoaded("error");
-            localStorage.removeItem("_at");
         }
     };
 
@@ -66,7 +63,7 @@ function App() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center flex-col p-4">
             <div className="w-full max-w-md">
                 {userLoaded === "loading" && (
                     <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200 text-center">
@@ -135,7 +132,6 @@ function App() {
                             </h2>
                             <p className="text-slate-500 text-sm">{user.email}</p>
                         </div>
-
                         <div className="bg-slate-50 rounded-lg p-4 mb-6 space-y-3 text-left">
                             <div>
                                 <p className="text-xs font-semibold text-slate-600 uppercase">User ID</p>
@@ -160,7 +156,6 @@ function App() {
                                 </p>
                             </div>
                         </div>
-
                         <button
                             onClick={logout}
                             className="w-full bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition duration-200">

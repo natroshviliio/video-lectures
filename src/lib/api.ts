@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
+let at: string | null = null;
 
 export const api_v1 = axios.create({
     baseURL: import.meta.env.VITE_API_V1_URL,
@@ -16,8 +17,20 @@ const handleAccessToken = async () => {
     return accessToken;
 };
 
+api_v2.interceptors.request.use(
+    async (config) => {
+        config.headers.set("Authorization", `Bearer ${at}`);
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    },
+);
+
 api_v2.interceptors.response.use(
     (response) => {
+        if (response.config.url === "/logout") at = null;
+
         return response;
     },
     async (error) => {
@@ -29,6 +42,7 @@ api_v2.interceptors.response.use(
             try {
                 const token = await handleAccessToken();
                 originalRequest.headers.set("Authorization", `Bearer ${token}`);
+                at = token;
 
                 return api_v2(originalRequest);
             } catch (err) {
