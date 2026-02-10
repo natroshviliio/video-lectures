@@ -1,5 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
-let at: string | null = null;
+import { useUserStore } from "../store/userStore";
 
 export const api_v1 = axios.create({
     baseURL: import.meta.env.VITE_API_V1_URL,
@@ -14,11 +14,14 @@ export const api_v2 = axios.create({
 const handleAccessToken = async () => {
     const { data } = await api_v2.post("/rt");
     const { accessToken } = data;
-    return accessToken;
+
+    return { accessToken };
 };
 
 api_v2.interceptors.request.use(
     async (config) => {
+        const at = useUserStore.getState().at;
+
         config.headers.set("Authorization", `Bearer ${at}`);
         config.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
         return config;
@@ -30,7 +33,7 @@ api_v2.interceptors.request.use(
 
 api_v2.interceptors.response.use(
     (response) => {
-        if (response.config.url === "/logout") at = null;
+        if (response.config.url === "/logout") useUserStore.getState().setAccessToken(null);
 
         return response;
     },
@@ -41,9 +44,10 @@ api_v2.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const token = await handleAccessToken();
-                originalRequest.headers.set("Authorization", `Bearer ${token}`);
-                at = token;
+                const { accessToken } = await handleAccessToken();
+                originalRequest.headers.set("Authorization", `Bearer ${accessToken}`);
+
+                useUserStore.getState().setAccessToken(accessToken);
 
                 return api_v2(originalRequest);
             } catch (err) {

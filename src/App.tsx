@@ -1,23 +1,15 @@
 import { useEffect, useState } from "react";
 import { api_v1, api_v2 } from "./lib/api";
-
-interface User {
-    user_id: number;
-    firstname: string;
-    lastname: string;
-    username: string;
-    email: string;
-    birthdate: string;
-    user_role: string;
-    is_active: boolean;
-}
+import { useUserStore } from "./store/userStore";
 
 function App() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [user, setUser] = useState<User | null>(null);
     const [isLoginPending, setLoginPending] = useState(false);
     const [userLoaded, setUserLoaded] = useState<"loading" | "loaded" | "error">("loading");
+
+    const user = useUserStore((state) => state.user);
+    const setUser = useUserStore((state) => state.setUser);
 
     const login = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -47,15 +39,19 @@ function App() {
         const checkSession = async () => {
             setUserLoaded("loading");
             try {
-                const response = await api_v2.get("/me");
-                const data = await response.data;
+                const response = await api_v2.post("/rt");
+                const { accessToken, user } = await response.data;
 
-                setUser(data.user ?? null);
+                useUserStore.getState().setAccessToken(accessToken);
+                useUserStore.getState().setUser(user ?? null);
+
+                setUser(user ?? null);
                 setUserLoaded("loaded");
-                console.clear();
             } catch {
                 setUser(null);
                 setUserLoaded("error");
+            } finally {
+                console.clear();
             }
         };
 
