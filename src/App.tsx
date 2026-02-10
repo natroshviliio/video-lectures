@@ -19,17 +19,11 @@ function App() {
     const [isLoginPending, setLoginPending] = useState(false);
     const [userLoaded, setUserLoaded] = useState<"loading" | "loaded" | "error">("loading");
 
-    const login = async (e: React.FormEvent<HTMLFormElement>) => {
+    const login = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoginPending(true);
         try {
-            await new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(true);
-                }, 2000);
-            });
-
-            const response = await api_v1.post("/login", { username, password }, { withCredentials: true });
+            const response = await api_v1.post("/login", { username, password });
             const data = await response.data;
             setUser(data.user);
             localStorage.setItem("_at", data.accessToken);
@@ -56,17 +50,12 @@ function App() {
         const checkSession = async () => {
             setUserLoaded("loading");
             try {
-                await new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve(true);
-                    }, 2000);
-                });
-
                 const response = await api_v2.get("/me");
                 const data = await response.data;
 
                 setUser(data.user ?? null);
                 setUserLoaded("loaded");
+                console.clear();
             } catch {
                 setUser(null);
                 setUserLoaded("error");
