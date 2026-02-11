@@ -1,32 +1,14 @@
-import { useState } from "react";
-import { api_v2 } from "../lib/api";
-
-interface User {
-    user_id: number;
-    firstname: string;
-    lastname: string;
-    username: string;
-    email: string;
-    birthdate: string;
-    user_role: string;
-    is_active: boolean;
-}
-
 interface LoginProps {
-    onLoginSuccess: (user: User) => void;
+    username: string;
+    setUsername: (username: string) => void;
+    password: string;
+    setPassword: (password: string) => void;
+    login: (e: React.SubmitEvent<HTMLFormElement>) => void;
+    isLoginPending: boolean;
 }
 
-export function Login({ onLoginSuccess }: LoginProps) {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-
-    const login = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const response = await api_v2.post("/login", { username, password });
-        const data = await response.data;
-        onLoginSuccess(data.user);
-        localStorage.setItem("_at", data.accessToken);
-    };
+const Login = (props: LoginProps) => {
+    const { username, setUsername, password, setPassword, login, isLoginPending } = props;
 
     return (
         <div className="bg-white rounded-xl shadow-2xl p-8 border border-slate-200">
@@ -44,6 +26,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="your.username"
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                        disabled={isLoginPending}
                     />
                 </div>
 
@@ -55,15 +38,26 @@ export function Login({ onLoginSuccess }: LoginProps) {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-slate-50"
+                        disabled={isLoginPending}
                     />
                 </div>
 
                 <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 mt-6">
-                    Sign In
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 mt-6"
+                    disabled={isLoginPending}>
+                    {isLoginPending ? (
+                        <div className="flex items-center justify-center gap-x-3">
+                            <span>Loading...</span>
+                            <div className="w-6 h-6 animate-spin border-t-blue-200 border-4 rounded-full mr-2"></div>
+                        </div>
+                    ) : (
+                        "Sign In"
+                    )}
                 </button>
             </form>
         </div>
     );
-}
+};
+
+export default Login;
